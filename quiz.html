@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>生信刷题神器</title>
+    <style>
+        :root {
+            --primary: #007AFF; /* iOS Blue */
+            --success: #34C759; /* iOS Green */
+            --error: #FF3B30;   /* iOS Red */
+            --bg: #F2F2F7;      /* iOS System Gray 6 */
+            --card-bg: #FFFFFF;
+            --text-main: #1C1C1E;
+            --text-sub: #8E8E93;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* 模拟手机容器 */
+        #app-container {
+            width: 100%;
+            max-width: 480px; /* iPhone Pro Max width approx */
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        /* 顶部导航 */
+        header {
+            background: var(--card-bg);
+            padding: 15px 20px;
+            padding-top: env(safe-area-inset-top, 20px); /* 适配刘海屏 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #E5E5EA;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* 模式切换开关 */
+        .mode-switch {
+            display: flex;
+            background: #E5E5EA;
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .mode-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            color: var(--primary);
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            height: 4px;
+            background: #E5E5EA;
+            width: 100%;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* 内容区域 */
+        #content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 80px; /* 留出底部按钮空间 */
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .question-tag {
+            font-size: 12px;
+            color: var(--primary);
+            background: rgba(0,122,255,0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 17px;
+            line-height: 1.5;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        /* 选项样式 */
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: #F2F2F7;
+            border: 2px solid transparent;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* 状态样式 */
+        .option-btn.correct {
+            background: rgba(52, 199, 89, 0.15);
+            border-color: var(--success);
+            color: #006400;
+        }
+        
+        .option-btn.wrong {
+            background: rgba(255, 59, 48, 0.15);
+            border-color: var(--error);
+            color: #8B0000;
+        }
+
+        .option-btn.disabled {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        /* 解析区域 */
+        .analysis-box {
+            margin-top: 20px;
+            background: #F9F9F9;
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 4px solid var(--primary);
+            display: none; /* 默认隐藏 */
+            animation: fadeIn 0.3s ease;
+        }
+
+        .analysis-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--text-sub);
+        }
+
+        .analysis-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-main);
+        }
+
+        /* 底部导航栏 */
+        .footer-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 480px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #E5E5EA;
+            padding: 15px 20px;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 100px;
+        }
+
+        .nav-btn:disabled {
+            background: #C7C7CC;
+            cursor: not-allowed;
+        }
+
+        .nav-btn.secondary {
+            background: #E5E5EA;
+            color: var(--text-main);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 收藏和错题按钮 */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #E5E5EA;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #E5E5EA;
+            background: white;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+
+        .action-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .action-btn.error-active {
+            border-color: var(--error);
+            color: var(--error);
+            background: rgba(255, 59, 48, 0.1);
+        }
+
+        /* 筛选模式切换 */
+        .filter-switch {
+            display: flex;
+            background: #E5E5EA;
+            border-radius: 8px;
+            padding: 2px;
+            margin: 15px 20px;
+        }
+
+        .filter-btn {
+            flex: 1;
+            padding: 8px 10px;
+            font-size: 13px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .filter-btn.active {
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            color: var(--primary);
+        }
+
+        /* 统计信息 */
+        .stats-bar {
+            background: var(--card-bg);
+            padding: 10px 20px;
+            border-bottom: 1px solid #E5E5EA;
+            display: flex;
+            justify-content: space-around;
+            font-size: 12px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-sub);
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <header>
+        <div id="progress-text" style="font-size: 14px; color: var(--text-sub);">1 / 85</div>
+        <div class="mode-switch">
+            <button class="mode-btn active" onclick="setMode('quiz')">刷题</button>
+            <button class="mode-btn" onclick="setMode('study')">背题</button>
+        </div>
+    </header>
+    
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value" id="stat-total">85</div>
+            <div class="stat-label">总题数</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="stat-favorite">0</div>
+            <div class="stat-label">已收藏</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="stat-error">0</div>
+            <div class="stat-label">错题数</div>
+        </div>
+    </div>
+
+    <div class="filter-switch">
+        <button class="filter-btn active" onclick="setFilter('all')">全部题目</button>
+        <button class="filter-btn" onclick="setFilter('favorite')">收藏夹</button>
+        <button class="filter-btn" onclick="setFilter('error')">错题本</button>
+    </div>
+    
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <div id="content-area">
+        <div class="card">
+            <div class="question-tag" id="q-category">分类</div>
+            <div class="question-text" id="q-text">题目加载中...</div>
+            
+            <div class="options-list" id="options-container">
+            </div>
+
+            <div class="action-buttons">
+                <button class="action-btn" id="btn-favorite" onclick="toggleFavorite()">
+                    <span id="favorite-icon">☆</span>
+                    <span>收藏</span>
+                </button>
+                <button class="action-btn" id="btn-mark-error" onclick="toggleError()">
+                    <span>📝</span>
+                    <span id="error-text">标记错题</span>
+                </button>
+            </div>
+
+            <div class="analysis-box" id="analysis-area">
+                <div class="analysis-title">💡 答案解析</div>
+                <div class="analysis-content" id="analysis-text"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-nav">
+        <button class="nav-btn secondary" onclick="prevQuestion()" id="btn-prev">上一题</button>
+        <button class="nav-btn" onclick="nextQuestion()" id="btn-next">下一题</button>
+    </div>
+</div>
+
+<script>
+    // 题目数据 (整合了之前提取的23道题)
+    const questions = [
+        {
+            id: 1,
+            category: "数据库",
+            question: "UCSC 的 dbSNP track 提供的信息包括？",
+            options: [
+                "A. SNP 的等位基因频率和临床意义",
+                "B. SNP 所在的表观修饰区域",
+                "C. 仅包含 SNP 位置",
+                "D. RNA 表达水平"
+            ],
+            answer: 0,
+            analysis: "dbSNP track 最核心的信息包括 SNP 的位置、等位基因频率 (Allele Frequency) 和临床意义 (Clinical Significance)。表观修饰属于 ENCODE track，表达属于 GTEx track。"
+        },
+        {
+            id: 2,
+            category: "数据库",
+            question: "使用 Table Browser 提取 SNP 周围基因，常用操作是？",
+            options: [
+                "A. 选择 intersection，与 RefGene 表交集",
+                "B. 导出为 FASTQ",
+                "C. 使用 LiftOver 转换坐标",
+                "D. 启动 Genome Graphs 模块"
+            ],
+            answer: 0,
+            analysis: "Intersection（交集）功能用于查找两个 Track 之间的重叠关系，例如找出包含特定 SNP 的 Gene。LiftOver 用于版本转换，FASTQ 是测序数据格式。"
+        },
+        {
+            id: 3,
+            category: "数据库",
+            question: "Refseq和GenBank有何区别？",
+            options: [
+                "A. GenBank提供了非冗余数据",
+                "B. Refseq含有不同实验室提供的公开DNA序列",
+                "C. Refseq源于GenBank并提供非冗余的经过校正的数据",
+                "D. GenBank序列数据是源于Refseq"
+            ],
+            answer: 2,
+            analysis: "GenBank 是归档库（冗余、未校正）；RefSeq 是参考序列库（去冗余、专家校正、标准）。"
+        },
+        {
+            id: 4,
+            category: "NCBI",
+            question: "NM_001075891 代表哪种生物数据类型？",
+            options: [
+                "A. 完整的参考基因组序列",
+                "B. 编码蛋白质的RNA序列",
+                "C. 基因",
+                "D. 蛋白质序列"
+            ],
+            answer: 1,
+            analysis: "NM_ 前缀代表审核过的 mRNA 序列；NC_ 是染色体；NP_ 是蛋白；XM_ 是预测 mRNA。"
+        },
+        {
+            id: 5,
+            category: "NCBI",
+            question: "索引编号为 NM_005368.2 的人类基因在哪个染色体上？",
+            options: [
+                "A. 2q13.1",
+                "B. Xq28",
+                "C. 11p15.5",
+                "D. 22q12.3"
+            ],
+            answer: 3,
+            analysis: "NM_005368 对应 MYH9 基因，位于 22q12.3。"
+        },
+        {
+            id: 6,
+            category: "NCBI",
+            question: "想知道某基因在哪个组织中表达，哪个资源最合适？",
+            options: [
+                "A. GenBank",
+                "B. NCBI Gene",
+                "C. Entrez",
+                "D. PubMed"
+            ],
+            answer: 1,
+            analysis: "NCBI Gene 数据库整合了表达谱数据（来自 GTEx 等），可以直接查看组织表达情况。"
+        },
+        {
+            id: 7,
+            category: "算法",
+            question: "K-mean是一种聚类算法，KNN是一种分类算法。",
+            options: [
+                "A. 对",
+                "B. 错"
+            ],
+            answer: 0,
+            analysis: "正确。K-means 是无监督聚类；KNN (K近邻) 是监督分类。"
+        },
+        {
+            id: 8,
+            category: "算法",
+            question: "下面关于人工智能的哪个说法是正确的？",
+            options: [
+                "A. 和SVM相比，线性回归对高维数据分类性能更好",
+                "B. 深度学习比Logistic回归解释性更好",
+                "C. PCA是常见的维数约简的方法",
+                "D. 聚类是常见的监督学习方法"
+            ],
+            answer: 2,
+            analysis: "PCA (主成分分析) 用于降维。聚类是无监督的；深度学习通常解释性较差。"
+        },
+        {
+            id: 9,
+            category: "序列比对",
+            question: "与PAM打分矩阵比较，BLOSUM打分矩阵的最大区别在哪里？",
+            options: [
+                "A. 结合了局部和全局比对的信息",
+                "B. 最好用于比较相关性很近的蛋白",
+                "C. 它是基于远相关蛋白的局部多序列比对",
+                "D. 它是基于近相关蛋白的全局多序列比对"
+            ],
+            answer: 2,
+            analysis: "BLOSUM 是基于 BLOCKS 数据库中远缘相关蛋白的保守区域（局部）构建的；PAM 是基于近缘推导的。"
+        },
+        {
+            id: 10,
+            category: "进化",
+            question: "直系同源物 (Orthologs) 定义为？",
+            options: [
+                "A. 结构相似但序列一致性小的同源序列",
+                "B. 同一物种中由基因复制产生的同源序列",
+                "C. 同一物种具有冗余功能的同源序列",
+                "D. 不同物种中具有共同祖先的同源序列"
+            ],
+            answer: 3,
+            analysis: "直系同源（Orthologs）源于物种形成；旁系同源（Paralogs）源于基因复制（B选项）。"
+        },
+        {
+            id: 11,
+            category: "序列比对",
+            question: "全局比对和局部比对的差异描述最佳的是？",
+            options: [
+                "A. 全局比对用于DNA，局部用于蛋白",
+                "B. 全局比对寻找全局最大化，局部选择局部最大化",
+                "C. 全局比对比对整条序列，而局部比对寻找最佳匹配子选项",
+                "D. 全局比对允许空位，局部不允许"
+            ],
+            answer: 2,
+            analysis: "全局比对 (Needleman-Wunsch) 试图拉通全长；局部比对 (Smith-Waterman) 寻找高分片段。"
+        },
+        {
+            id: 12,
+            category: "序列比对",
+            question: "全局比对算法（如Needleman-Wunsch）可以确保找到最优比对。因为它是：",
+            options: [
+                "A. 只能用于蛋白质",
+                "B. 寻找最优子路径的方法",
+                "C. 穷举每一种可能的组合",
+                "D. 迭代递归的方法（动态规划）"
+            ],
+            answer: 3,
+            analysis: "Needleman-Wunsch 基于动态规划，通过构建矩阵和回溯找到数学上的最优解，而非启发式近似。"
+        },
+        {
+            id: 13,
+            category: "BLAST",
+            question: "BLAST搜索中，哪个指标提供了假阳性个数的估计？",
+            options: [
+                "A. E值 (E-value)",
+                "B. 比特分数 (Bit Score)",
+                "C. 一致性百分比",
+                "D. 阳性百分比"
+            ],
+            answer: 0,
+            analysis: "E-value (Expect Value) 指在随机情况下期望找到的更优匹配条数。E值越小越可信。"
+        },
+        {
+            id: 14,
+            category: "BLAST",
+            question: "标准化的BLAST分数（比特分数）：",
+            options: [
+                "A. 可在不同BLAST搜索间比较（即便打分矩阵不同）",
+                "B. 必须相同打分矩阵才能比较",
+                "C. 与打分矩阵无关",
+                "D. 没有单位"
+            ],
+            answer: 0,
+            analysis: "Bit Score 经过归一化，消除了搜索空间大小的影响，具有跨搜索的可比性。"
+        },
+        {
+            id: 15,
+            category: "BLAST",
+            question: "当BLAST检索的E值减小时：",
+            options: [
+                "A. 概率P值倾向于变大",
+                "B. K值也在减小",
+                "C. 比对分值倾向于变大",
+                "D. 极值分布偏斜度减小"
+            ],
+            answer: 2,
+            analysis: "E值越小，说明匹配越非随机，通常对应的比对得分 (Score) 越高。"
+        },
+        {
+            id: 16,
+            category: "BLAST",
+            question: "寻找与查询序列相关的远缘蛋白质，哪个方法最好？",
+            options: [
+                "A. 物种特异数据库",
+                "B. DELTA-BLAST",
+                "C. PSI-BLAST",
+                "D. BLASTP"
+            ],
+            answer: 2,
+            analysis: "PSI-BLAST 通过迭代构建位置特异性打分矩阵 (PSSM)，对远缘同源蛋白极其敏感。"
+        },
+        {
+            id: 17,
+            category: "BLAST",
+            question: "PSI-BLAST中，如何最大程度减少矩阵污染？",
+            options: [
+                "A. 减少迭代次数",
+                "B. 去掉筛选步骤",
+                "C. 使用更短的索引序列",
+                "D. 降低E值的阈值"
+            ],
+            answer: 3,
+            analysis: "降低 E-value 阈值（更严格）可以防止非同源序列（假阳性）进入下一轮迭代构建矩阵。"
+        },
+        {
+            id: 18,
+            category: "结构",
+            question: "SCOP数据库的顶层分类是？",
+            options: [
+                "A. Family",
+                "B. Fold",
+                "C. Class",
+                "D. Superfamily"
+            ],
+            answer: 2,
+            analysis: "SCOP 层级：Class (类) -> Fold -> Superfamily -> Family。"
+        },
+        {
+            id: 19,
+            category: "结构",
+            question: "关于PDB数据库，正确的是？",
+            options: [
+                "A. 由NCBI独家管理",
+                "B. 包括蛋白质、核酸及糖类大分子的结构数据",
+                "C. 是二级结构数据库",
+                "D. 结构数量与序列数量相当"
+            ],
+            answer: 1,
+            analysis: "PDB 存储所有生物大分子的三维结构信息。序列数远多于结构数。"
+        },
+        {
+            id: 20,
+            category: "结构",
+            question: "比较两个远缘同源蛋白质时：",
+            options: [
+                "A. 倾向于有更多共同的三维结构特征，而非序列一致性",
+                "B. 序列和结构相似水平相当",
+                "C. 无法归纳相似度",
+                "D. 序列一致性比结构特征更高"
+            ],
+            answer: 0,
+            analysis: "结构比序列更保守。即便序列相似度极低，同源蛋白的三维折叠通常仍保持一致。"
+        },
+        {
+            id: 21,
+            category: "结构",
+            question: "相对于NMR，X射线晶体衍射的优点是更容易：",
+            options: [
+                "A. 测定大的蛋白质结构",
+                "B. 解析跨膜结构域",
+                "C. 制备样本",
+                "D. 解释数据"
+            ],
+            answer: 0,
+            analysis: "NMR 受分子量限制（<30kDa），X-ray 理论上无上限，适合大分子。"
+        },
+        {
+            id: 22,
+            category: "结构",
+            question: "关于结构数据库，错误的说法是？",
+            options: [
+                "A. CATH是蛋白质二级结构数据库",
+                "B. SWISS-MODEL存有同源建模数据",
+                "C. PDB是最主要的三维结构库",
+                "D. SCOP是对结构分类的数据库"
+            ],
+            answer: 0,
+            analysis: "CATH 是三维结构分类数据库（Class, Architecture, Topology, Homology），不是二级结构库。"
+        },
+        {
+            id: 23,
+            category: "结构",
+            question: "AlphaFold 中反映局部结构可信度的指标是？",
+            options: [
+                "A. TM-Score",
+                "B. RMSD",
+                "C. PAE",
+                "D. pLDDT"
+            ],
+            answer: 3,
+            analysis: "pLDDT (0-100) 衡量逐残基的局部置信度；PAE 衡量结构域间相对位置误差。"
+        },
+        {
+            id: 24,
+            category: "分子进化分析",
+            question: "在最大似然（ML）方法中使用氨基酸替代模型的主要目的是什么？",
+            options: [
+                "A. 优化序列比对得分",
+                "B. 估计序列随时间演化的概率",
+                "C. 计算序列的 GC 含量",
+                "D. 判断序列的二级结构"
+            ],
+            answer: 1,
+            analysis: "替代模型描述了氨基酸（或核苷酸）序列在进化过程中的替换规律和速率。在ML方法中，其核心目的是在给定进化树和模型参数的条件下，计算观察到当前序列的可能性。"
+        },
+        {
+            id: 25,
+            category: "分子进化分析",
+            question: "关于 Poisson 氨基酸替代模型，下列哪项正确？",
+            options: [
+                "A. 每种氨基酸替代概率不同",
+                "B. 所有氨基酸替代概率相同",
+                "C. 只能用于核酸序列",
+                "D. 只能用于远缘序列"
+            ],
+            answer: 1,
+            analysis: "Poisson模型是所有氨基酸替代概率相同的均匀模型，是最简单的氨基酸替代模型。"
+        },
+        {
+            id: 26,
+            category: "分子进化分析",
+            question: "JTT 模型是基于什么数据构建的？",
+            options: [
+                "A. DNA 对齐",
+                "B. 小规模蛋白家族统计",
+                "C. 大规模蛋白序列统计",
+                "D. RNA 次级结构"
+            ],
+            answer: 2,
+            analysis: "JTT (Jones-Taylor-Thornton) 模型是基于一个广泛的、可靠的亲缘很近的蛋白序列比对数据库（如Dayhoff数据库的PAM矩阵相关的数据库）统计得出的，适用于分析非同义氨基酸替换。"
+        },
+        {
+            id: 27,
+            category: "分子进化分析",
+            question: "PAM250 与 PAM30 相比，更适合：",
+            options: [
+                "A. 近缘序列",
+                "B. 远缘序列",
+                "C. 核酸比对",
+                "D. 仅用于 NJ 树"
+            ],
+            answer: 1,
+            analysis: "PAM（Point Accepted Mutation）值代表进化距离，PAM值越高，表示序列间接受了更多的替换，因此适合用来比对更远缘（进化距离更大）的序列。"
+        },
+        {
+            id: 28,
+            category: "分子进化分析",
+            question: "BLOSUM 矩阵主要用于：",
+            options: [
+                "A. 分子进化树构建",
+                "B. 序列比对评分",
+                "C. 最大似然计算",
+                "D. 分支支持评估"
+            ],
+            answer: 1,
+            analysis: "BLOSUM矩阵（Block Substitution Matrix）是基于局部序列比对中高度保守的\"块\"（blocks）计算得出，主要用于（蛋白质）序列比对的打分。"
+        },
+        {
+            id: 29,
+            category: "分子进化分析",
+            question: "在系统发育树中，bootstrap 支持值越高表示：",
+            options: [
+                "A. 树越长",
+                "B. 分支重复性越高",
+                "C. 替代模型越合适",
+                "D. 序列比对质量越差"
+            ],
+            answer: 1,
+            analysis: "Bootstrap分析通过对原始数据进行有放回的重复抽样来构建大量树，Bootstrap支持值代表了某个分支（聚类关系）在这些重采样树中出现的比例。支持值越高，表明该分支在原始数据中被支持的程度越高，随机性越低。"
+        },
+        {
+            id: 30,
+            category: "分子进化分析",
+            question: "相对于 NJ，最大似然（ML）方法的优点是：",
+            options: [
+                "A. 速度更快",
+                "B. 可使用复杂替代模型计算 likelihood",
+                "C. 不需要序列比对",
+                "D. 只适合 DNA"
+            ],
+            answer: 1,
+            analysis: "ML方法严格基于统计原理，能整合复杂的替代模型和进化速率异质性等参数进行计算，理论框架更严谨。执行速度慢是其主要缺点。"
+        },
+        {
+            id: 31,
+            category: "分子进化分析",
+            question: "无时间尺度标注的分子进化树中的分支长度代表什么？",
+            options: [
+                "A. 不同物种之间的相似性",
+                "B. 时间或进化时间",
+                "C. 物种的数量",
+                "D. 进化树的拓扑结构"
+            ],
+            answer: 0,
+            analysis: "无时间尺度的进化树，其分支长度（长度可变）通常代表进化距离（如每个位点的期望替换数，如0.01代表1%的差异），而非绝对时间。"
+        },
+        {
+            id: 32,
+            category: "数据库",
+            question: "NCBI 数据库 ID \"NM_001075891\" 代表什么类型的数据？",
+            options: [
+                "A. 基因 ID",
+                "B. 编码蛋白质的 RNA 序列（mRNA，经验证）",
+                "C. 预测的编码蛋白质的 RNA 序列",
+                "D. 蛋白质序列"
+            ],
+            answer: 1,
+            analysis: "NM_ 前缀表示经过实验验证的编码蛋白质的 mRNA 参考序列（RefSeq mRNA）。"
+        },
+        {
+            id: 33,
+            category: "数据库",
+            question: "NCBI 数据库 ID \"NC_000022.11\" 代表什么类型的数据？",
+            options: [
+                "A. 线粒体基因组",
+                "B. 质粒序列",
+                "C. 完整的参考基因组序列（染色体）",
+                "D. 基因片段"
+            ],
+            answer: 2,
+            analysis: "NC_ 前缀表示完整的参考基因组序列，通常是染色体级别的序列。NC_000022 特指人类22号染色体。"
+        },
+        {
+            id: 34,
+            category: "数据库",
+            question: "NCBI 数据库中纯数字 ID \"4151\" 代表什么类型的数据？",
+            options: [
+                "A. 蛋白质 ID",
+                "B. 基因 ID（Gene ID）",
+                "C. 文献 PMID",
+                "D. 物种分类 ID"
+            ],
+            answer: 1,
+            analysis: "纯数字 ID 通常代表 Gene ID（如 4151 对应 MBL1 基因）。NCBI Gene 数据库使用纯数字作为基因的唯一标识符。"
+        },
+        {
+            id: 35,
+            category: "数据库",
+            question: "NCBI 数据库 ID \"XM_013113132\" 代表什么类型的数据？",
+            options: [
+                "A. 经验证的 mRNA 序列",
+                "B. 预测的编码蛋白质的 RNA 序列（未经实验验证）",
+                "C. 非编码 RNA",
+                "D. 假基因序列"
+            ],
+            answer: 1,
+            analysis: "XM_ 前缀表示通过基因组注释预测得到的 mRNA 序列，尚未经过实验验证。与 NM_ 的区别在于证据等级。"
+        },
+        {
+            id: 36,
+            category: "数据库",
+            question: "NCBI 数据库 ID \"NP_001369739\" 代表什么类型的数据？",
+            options: [
+                "A. mRNA 序列",
+                "B. 基因序列",
+                "C. 蛋白质序列",
+                "D. 染色体序列"
+            ],
+            answer: 2,
+            analysis: "NP_ 前缀表示蛋白质序列（RefSeq Protein）。NP_ 序列通常与对应的 NM_ mRNA 序列配对。"
+        },
+        {
+            id: 37,
+            category: "基础知识",
+            question: "氨基酸\"天冬酰胺\"的单字母符号是？",
+            options: [
+                "A. N",
+                "B. D",
+                "C. Q",
+                "D. E"
+            ],
+            answer: 0,
+            analysis: "天冬酰胺（Asparagine）的单字母符号是 N，三字母符号是 Asn。它是一种极性不带电荷的氨基酸。"
+        },
+        {
+            id: 38,
+            category: "基础知识",
+            question: "氨基酸\"色氨酸\"的单字母符号是？",
+            options: [
+                "A. T",
+                "B. W",
+                "C. Y",
+                "D. F"
+            ],
+            answer: 1,
+            analysis: "色氨酸（Tryptophan）的单字母符号是 W，三字母符号是 Trp。它是唯一含有吲哚环的芳香族氨基酸，也是最大的标准氨基酸。"
+        },
+        {
+            id: 39,
+            category: "基础知识",
+            question: "氨基酸\"谷氨酰胺\"的单字母符号是？",
+            options: [
+                "A. E",
+                "B. Q",
+                "C. N",
+                "D. K"
+            ],
+            answer: 1,
+            analysis: "谷氨酰胺（Glutamine）的单字母符号是 Q，三字母符号是 Gln。它是一种极性不带电荷的氨基酸，侧链比天冬酰胺多一个亚甲基。"
+        },
+        {
+            id: 40,
+            category: "基础知识",
+            question: "氨基酸\"苯丙氨酸\"的单字母符号是？",
+            options: [
+                "A. F",
+                "B. Y",
+                "C. W",
+                "D. P"
+            ],
+            answer: 0,
+            analysis: "苯丙氨酸（Phenylalanine）的单字母符号是 F，三字母符号是 Phe。它是一种疏水性芳香族氨基酸，是人体必需氨基酸之一。"
+        },
+        {
+            id: 41,
+            category: "基础知识",
+            question: "氨基酸\"酪氨酸\"的单字母符号是？",
+            options: [
+                "A. T",
+                "B. Y",
+                "C. F",
+                "D. W"
+            ],
+            answer: 1,
+            analysis: "酪氨酸（Tyrosine）的单字母符号是 Y，三字母符号是 Tyr。它是芳香族氨基酸，侧链含有酚羟基，可以被磷酸化修饰，在信号转导中起重要作用。"
+        },
+        {
+            id: 42,
+            category: "基因预测",
+            question: "以下哪一个工具主要用于真核生物基因结构预测？",
+            options: [
+                "A. BLASTN",
+                "B. GENSCAN",
+                "C. ClustalW",
+                "D. InterPro"
+            ],
+            answer: 1,
+            analysis: "GENSCAN是一种用于人类（或脊椎动物）基因预测的\"从头预测\"软件，它根据基因的整体结构（外显子、内含子等）进行预测，是真核生物基因结构预测的经典工具。BLASTN用于核酸序列同源性比对；ClustalW用于多序列比对；InterPro是蛋白质家族和结构域数据库。"
+        },
+        {
+            id: 43,
+            category: "基因预测",
+            question: "使用 ORF Finder 工具时，主要预测的是什么？",
+            options: [
+                "A. 蛋白质三级结构",
+                "B. 信号肽位置",
+                "C. 潜在的蛋白编码区",
+                "D. microRNA 结合位点"
+            ],
+            answer: 2,
+            analysis: "ORF（开放阅读框）是从起始密码子到终止密码子的可编码区。ORF Finder的功能正是识别这段连续序列，是寻找基因编码区的基础工具。蛋白质三级结构预测需要使用AlphaFold等工具；信号肽预测使用SignalP；microRNA结合位点预测使用miRDB等工具。"
+        },
+        {
+            id: 44,
+            category: "基因预测",
+            question: "若想验证预测的基因是否正确编码蛋白，可以将核苷酸序列翻译并比对数据库。通常使用哪种程序？",
+            options: [
+                "A. blastn",
+                "B. blastx",
+                "C. tblastn",
+                "D. blastp"
+            ],
+            answer: 1,
+            analysis: "blastx的核心功能是将输入的核酸查询序列在内部翻译为所有可能的蛋白质序列（六个读码框），然后将翻译产物与蛋白质数据库进行比较。这是验证一段未知核酸序列能否编码一个已知功能蛋白的直接且标准的方法。blastn直接比对核酸；tblastn是蛋白查询核酸数据库；blastp是蛋白比对蛋白。"
+        },
+        {
+            id: 45,
+            category: "基因预测",
+            question: "给定一条未知蛋白序列，最常见的功能预测方法是：",
+            options: [
+                "A. 与已知蛋白比对（blastp）",
+                "B. 预测 GC 含量",
+                "C. 预测二级结构",
+                "D. 预测 miRNA 结合位点"
+            ],
+            answer: 0,
+            analysis: "基于\"序列同源性往往意味着功能相似性\"的原理，使用blastp搜索蛋白质数据库，通过同源比对来推断未知蛋白的功能，是最常用和首选的策略。GC含量是核酸特征；二级结构预测有助于理解结构但不能直接推断功能；miRNA结合位点是针对mRNA的分析。"
+        },
+        {
+            id: 46,
+            category: "基因预测",
+            question: "在基因上游区域识别转录因子结合位点的意义是：",
+            options: [
+                "A. 确定密码子使用频率",
+                "B. 分析基因调控机制",
+                "C. 预测信号肽",
+                "D. 分析二级结构"
+            ],
+            answer: 1,
+            analysis: "基因上游区域（特别是启动子区）包含转录因子结合位点（TFBS），它们是调控基因转录（何时、何地、以何种水平表达）的关键顺式作用元件。识别这些位点是理解基因表达调控机制的基础。密码子使用频率分析的是编码区；信号肽是蛋白质N末端序列；二级结构由氨基酸序列决定。"
+        },
+        {
+            id: 47,
+            category: "基因预测",
+            question: "对某基因进行 miRNA 预测的主要意义是：",
+            options: [
+                "A. 发现蛋白二级结构",
+                "B. 探索转录后调控机制",
+                "C. 分析同源进化关系",
+                "D. 确定跨膜区"
+            ],
+            answer: 1,
+            analysis: "miRNA通过与靶基因mRNA（通常在3'UTR）结合，影响mRNA的稳定性或抑制其翻译，从而在转录后水平精细调控基因表达。预测miRNA正是为了研究这一重要的调控网络。蛋白二级结构由氨基酸序列决定；同源进化分析通过多序列比对和系统发育树完成；跨膜区通过TMHMM等工具预测。"
+        },
+        {
+            id: 48,
+            category: "基因预测",
+            question: "ENC-GC3s 分析主要用来研究：",
+            options: [
+                "A. 蛋白三级结构",
+                "B. 基因的调控元件",
+                "C. 密码子使用模式及选择压力",
+                "D. 信号肽识别"
+            ],
+            answer: 2,
+            analysis: "ENC（有效密码子数）衡量密码子使用偏好程度，GC3s衡量同义密码子第三位的GC含量。ENC-GC3s曲线通过比较二者的关系，用于推断影响密码子使用模式的主导力量是突变压力（数据点贴近理论曲线）还是自然选择（数据点显著偏离理论曲线）。"
+        },
+        {
+            id: 49,
+            category: "基因预测",
+            question: "InterPro 数据库的核心功能是：",
+            options: [
+                "A. 分析启动子序列",
+                "B. 预测蛋白功能结构域和家族信息",
+                "C. 预测核酸二级结构",
+                "D. 进行基因组组装"
+            ],
+            answer: 1,
+            analysis: "InterPro是一个整合数据库，它汇聚了多个蛋白质特征数据库（如Pfam、SMART、PROSITE等）的信息，用于全面注释和预测蛋白质序列中存在的功能结构域、家族、重复和功能位点。启动子序列分析是DNA层面调控研究；核酸二级结构是RNA研究内容；基因组组装是将测序片段拼接成完整基因组的过程。"
+        },
+        {
+            id: 50,
+            category: "结构预测",
+            question: "以下哪个工具用于预测蛋白二级结构（α-螺旋、β-折叠等）？",
+            options: [
+                "A. Jpred",
+                "B. AlphaFold",
+                "C. Swiss-model",
+                "D. ORF Finder"
+            ],
+            answer: 0,
+            analysis: "JPred是专门用于预测蛋白质二级结构（α-螺旋、β-折叠、无规卷曲）的服务器。AlphaFold和Swiss-model是用于预测蛋白质三级结构（三维空间结构）的工具；ORF Finder用于预测开放阅读框。"
+        },
+        {
+            id: 51,
+            category: "结构预测",
+            question: "若需要预测蛋白的 3D 结构，以下哪个方法是目前效果最好的？",
+            options: [
+                "A. PSIPRED",
+                "B. AlphaFold",
+                "C. GENSCAN",
+                "D. BLASTX"
+            ],
+            answer: 1,
+            analysis: "由DeepMind开发的AlphaFold基于深度学习，在蛋白质三级结构预测的精度和速度上取得了突破性进展，是目前公认效果最好的方法。PSIPRED是二级结构预测工具；GENSCAN用于基因结构预测；BLASTX用于核酸序列与蛋白质数据库的比对。"
+        },
+        {
+            id: 52,
+            category: "基因预测",
+            question: "在 mRNA 疫苗的设计中，密码子偏好优化的主要目的是：",
+            options: [
+                "A. 改变蛋白氨基酸组成",
+                "B. 提高 mRNA 的稳定性",
+                "C. 提高翻译效率与蛋白表达量",
+                "D. 增强脂质纳米颗粒包裹效率"
+            ],
+            answer: 2,
+            analysis: "不同物种对同义密码子有使用偏好（即某些tRNA更丰富）。将mRNA序列中的密码子优化为宿主（如人类）细胞更偏爱、对应tRNA更丰富的密码子，可以使核糖体翻译过程更顺畅、更快，从而显著提高目标抗原蛋白的表达水平，这是mRNA疫苗设计的核心环节之一。密码子优化不改变氨基酸组成；mRNA稳定性主要与5'帽、3' poly(A)尾等有关；LNP包裹效率取决于配方和制备工艺。"
+        },
+        {
+            id: 53,
+            category: "数据库",
+            question: "UCSC Genome Browser 的核心功能是？",
+            options: [
+                "A. 进行转录组差异分析",
+                "B. 交互式浏览和可视化基因组注释信息",
+                "C. 自动预测蛋白三级结构",
+                "D. 进行分子对接分析"
+            ],
+            answer: 1,
+            analysis: "UCSC Genome Browser是一个用于交互式探索和可视化基因组数据（如基因、变异、表观遗传信号）的强大平台。其核心是提供一个图形界面，让用户可以加载、查看、并整合多种\"轨道（Track）\"数据。转录组差异分析需要使用DESeq2、edgeR等工具；蛋白三级结构预测是AlphaFold等工具的功能；分子对接分析使用AutoDock等软件。"
+        },
+        {
+            id: 54,
+            category: "数据库",
+            question: "在 Table Browser 中导出基因 GO 注释，应选择哪个 track？",
+            options: [
+                "A. refGene",
+                "B. kgXref",
+                "C. goaPart",
+                "D. snp151"
+            ],
+            answer: 2,
+            analysis: "goaPart是存储GO ID对应关系的关键表。获取GO注释的步骤需要选择\"Linked Tables\"中的\"go\"表，并进一步在go.goaPart中选中go_id以及在goterm表中选中name。refGene存储基因/转录本的坐标信息；kgXref是链接表，用于关联不同数据库的ID；snp151存储SNP信息。"
+        },
+        {
+            id: 55,
+            category: "数据库",
+            question: "以下哪项不能作为 UCSC Genome Browser 的 \"track\"？",
+            options: [
+                "A. BED格式基因注释",
+                "B. WIG/BigWig格式信号强度轨迹",
+                "C. BAM格式测序比对轨迹",
+                "D. FASTA格式基因组序列文件"
+            ],
+            answer: 3,
+            analysis: "FASTA格式是存储参考基因组序列的文件格式。UCSC Browser使用的参考基因组序列是其载入的基准，是所有轨道显示的参照坐标，它不是作为普通可以切换显示的\"用户annotation track\"加载的。BED格式描述基因组特征；WIG/BigWig用于表示连续数值信号；BAM格式是比对后的测序数据，这些都可以作为Track加载。"
+        },
+        {
+            id: 56,
+            category: "数据库",
+            question: "BED、BEDGRAPH、WIG、BIGWIG的主要区别在于？",
+            options: [
+                "A. 是否包含序列信息",
+                "B. 是否压缩及可随机访问",
+                "C. 是否包含注释信息",
+                "D. 是否为图像格式"
+            ],
+            answer: 1,
+            analysis: "BED和BEDGRAPH是纯文本格式，不压缩且无法高效随机访问大文件。WIG是纯文本，数据量可能很大。BigWig是二进制索引压缩格式，它是对WIG和BEDGRAPH的优化，支持高效的数据压缩和随机访问，允许浏览器快速加载大范围或高分辨率的数据。这些格式基本都不存储完整的序列信息，也都不是图像格式。"
+        },
+        {
+            id: 57,
+            category: "数据库",
+            question: "IGV加载BAM文件时提示 \"Cannot access remote genome\"，原因是？",
+            options: [
+                "A. 文件损坏",
+                "B. 未生成.bai索引文件",
+                "C. IGV版本过高",
+                "D. 内存不足"
+            ],
+            answer: 1,
+            analysis: "BAM（Binary Alignment/Map）文件是二进制格式，为了快速访问特定基因组区域的数据，必须有一个对应的.bai索引文件（与BAM文件同名，后缀为.bai，并放在同一目录下）。IGV加载远程或本地BAM时，若找不到有效的索引文件，就无法定位和读取数据，从而可能报出类似错误。"
+        },
+        {
+            id: 58,
+            category: "数据库",
+            question: "UCSC的dbSNP track提供的信息包括？",
+            options: [
+                "A. SNP的等位基因频率和临床意义",
+                "B. SNP所在的表观修饰区域",
+                "C. 仅包含SNP位置",
+                "D. RNA表达水平"
+            ],
+            answer: 0,
+            analysis: "dbSNP track不仅包含SNP的位置，还整合了大量关联信息。用户点击某个SNP时，可以查看其dbSNP ID、在gnomAD等群体数据库中的等位基因频率，以及其在ClinVar等数据库中的临床意义注释（良性、致病等）。表观修饰区域需要通过ENCODE等轨道判断；RNA表达水平来源于RNA-seq数据的轨道。"
+        },
+        {
+            id: 59,
+            category: "数据库",
+            question: "Ensembl与UCSC Browser的主要差异之一是？",
+            options: [
+                "A. Ensembl图像分辨率更高",
+                "B. Ensembl提供跨物种比较与基因树分析",
+                "C. Ensembl仅支持人类基因组",
+                "D. UCSC可预测蛋白质结构"
+            ],
+            answer: 1,
+            analysis: "Ensembl的核心特色之一是提供\"Comparative Genomics\"和\"Gene Tree\"功能，便于分析基因的同源、直系同源关系和进化历史。UCSC虽也有保守性轨道，但其在物种比较层面的系统性分析功能不如Ensembl。两者图像分辨率相当；Ensembl支持多个物种；两者都不直接提供蛋白质结构预测功能。"
+        },
+        {
+            id: 60,
+            category: "数据库",
+            question: "使用 Table Browser 提取 SNP 周围基因，常用操作是？",
+            options: [
+                "A. 选择intersection，与RefGene表交集",
+                "B. 导出为FASTQ",
+                "C. 使用LiftOver转换坐标",
+                "D. 启动Genome Graphs模块"
+            ],
+            answer: 0,
+            analysis: "标准操作流程是：第一步从snp表中获取SNP坐标，第二步返回到Table Browser，将第一步获得的坐标作为\"Define regions\"输入，然后在\"可选操作\"中选择\"Intersection\"，与基因预测表（如UCSC Genes或RefSeq Genes）进行交集，从而快速得到这些SNP坐标范围内或附近的基因。FASTQ是测序序列文件；LiftOver用于坐标转换；Genome Graphs用于图表化比较。"
+        },
+        {
+            id: 61,
+            category: "数据库",
+            question: "IGV支持的信号强度文件格式包括？",
+            options: [
+                "A. TXT",
+                "B. BED",
+                "C. BIGWIG与BEDGRAPH",
+                "D. JSON"
+            ],
+            answer: 2,
+            analysis: "IGV与UCSC Browser一样，都将BigWig和BEDGraph作为存储基因组区间上连续定量信号（如测序深度、富集度分数）的标准格式。两者都能在IGV中以类似曲线或热图的形式很好地呈现。通用的.txt文件格式没有标准结构；BED格式用于表示离散的基因组特征；IGV的核心数据格式不是JSON。"
+        },
+        {
+            id: 62,
+            category: "数据库",
+            question: "UCSC的LiftOver工具的主要用途是？",
+            options: [
+                "A. 将RNA序列转化为蛋白序列",
+                "B. 将基因名称转化为基因ID",
+                "C. 在不同基因组版本间转换坐标",
+                "D. 预测同源基因"
+            ],
+            answer: 2,
+            analysis: "LiftOver是用于将一组基因组坐标（如一个BED文件）从一个参考基因组组装版本（如hg19）转换到另一个版本（如hg38）的连锁图比对工具。这是处理多版本基因组数据时必不可少的步骤。序列翻译使用EMBOSS transeq等工具；ID转换使用Table Browser或biomaRt；同源基因预测通过序列比对和系统发育分析完成。"
+        },
+        {
+            id: 63,
+            category: "转录组分析",
+            question: "对于三组及以上样本的差异表达分析，最常用的方法是：",
+            options: [
+                "A. 单样本 t 检验",
+                "B. 方差分析 (ANOVA)",
+                "C. 主成分分析",
+                "D. KNN"
+            ],
+            answer: 1,
+            analysis: "t检验仅适用于两组比较。当比较组别大于等于3组时，常用方差分析法（ANOVA）。它的原理是将数据的总变异分解为组间变异（由不同处理或条件引起的差异）和组内变异（个体或技术误差），通过比较这两部分变异来判断组间均值是否有显著差异。主成分分析是降维方法；KNN是分类算法。"
+        },
+        {
+            id: 64,
+            category: "转录组分析",
+            question: "下列哪种聚类方法属于划分式聚类 (Partitioning clustering)?",
+            options: [
+                "A. K-means",
+                "B. 层次聚类 (Hierarchical)",
+                "C. DBSCAN",
+                "D. SOM（自组织映射）"
+            ],
+            answer: 0,
+            analysis: "聚类主要分两类：层次聚类（自底向上或自顶向下合并/分割）和划分式聚类。K-means是划分式聚类最经典和常用的算法，它需要预先指定聚类数目K，通过迭代将样本划分到K个簇中。层次聚类使用树状图表示聚类过程；DBSCAN是基于密度的聚类；SOM是神经网络方法。"
+        },
+        {
+            id: 65,
+            category: "转录组分析",
+            question: "如果希望用表达谱预测样本属于疾病组或健康组，哪类方法最适合？",
+            options: [
+                "A. 无监督聚类",
+                "B. 线性回归",
+                "C. 监督分类模型 (如 Logistic 回归、随机森林)",
+                "D. 主成分分析"
+            ],
+            answer: 2,
+            analysis: "无监督聚类用于探索数据内在结构，没有已知标签。分类的目的是利用已知标签的样本（如已确诊的疾病和健康样本）训练一个模型，去预测新样本的标签。因此，必须使用监督分类模型，如逻辑回归、支持向量机(SVM)、随机森林等。线性回归用于连续值预测；主成分分析是降维方法。"
+        },
+        {
+            id: 66,
+            category: "转录组分析",
+            question: "与基因芯片相比，RNA-seq 的优势不包括：",
+            options: [
+                "A. 可以检测未知转录本",
+                "B. 可以获得基因表达的绝对定量",
+                "C. 不受序列覆盖深度影响",
+                "D. 可同时检测 SNP 和可变剪接"
+            ],
+            answer: 2,
+            analysis: "RNA-seq基于测序，其优势包括：不依赖已知探针，能发现新转录本（A）；通过比对序列数可实现绝对定量（B）；能分析序列变异（SNP）和可变剪接事件（D）。选项C是错误的，RNA-seq结果的分辨率和低丰度基因的检出能力高度依赖于测序深度，深度不足会严重影响结果。"
+        },
+        {
+            id: 67,
+            category: "转录组分析",
+            question: "在使用基因表达数据建立疾病预测模型后，下列哪项指标最能衡量模型整体分类性能？",
+            options: [
+                "A. FPKM值",
+                "B. ROC曲线下面积（AUC）",
+                "C. PCA第一主成分方差",
+                "D. log2 Fold Change"
+            ],
+            answer: 1,
+            analysis: "FPKM是基因表达定量值；PCA方差贡献率用于降维；Fold Change用于差异分析。ROC曲线描绘了模型在不同分类阈值下真阳性率和假阳性率的权衡关系。曲线下面积（AUC）综合了所有阈值下的表现，是评估二分类模型整体性能的黄金标准，数值越大（越接近1）说明模型性能越好。"
+        },
+        {
+            id: 68,
+            category: "转录组分析",
+            question: "在基因芯片差异表达分析中，如果有 10,000 个基因被检测，单纯使用 p<0.05 会产生大量假阳性，下列哪种方法是常用的校正手段？",
+            options: [
+                "A. Bonferroni校正",
+                "B. FDR（Benjamini-Hochberg）",
+                "C. Holm校正",
+                "D. 以上均可，但 FDR 更适合大规模基因筛选"
+            ],
+            answer: 3,
+            analysis: "因为同时检验成千上万个基因，假阳性会急剧膨胀。Bonferroni、Holm、FDR都是校正方法。关键在于：FDR method is less conservative than Bonferroni and usually more appropriate for microarrays。FDR（错误发现率）控制的是被判定为显著的基因中假阳性的比例，在大规模筛选中比控制\"族错误率\"的Bonferroni方法更宽松、更实用。"
+        },
+        {
+            id: 69,
+            category: "转录组分析",
+            question: "在基因表达谱层次聚类中，如果希望对极值表达敏感，最合适的距离度量是：",
+            options: [
+                "A. Euclidean距离",
+                "B. Pearson相关系数",
+                "C. Manhattan距离",
+                "D. Jaccard系数"
+            ],
+            answer: 0,
+            analysis: "欧氏距离（Euclidean）计算样本在多维空间坐标点的直线距离，对单个维度的极端值（极大或极小）非常敏感。Pearson相关系数衡量的是两个变量表达模式的形状相似性（同时高、同时低的变化趋势），对表达水平的绝对数值缩放不敏感，因此对极值不敏感。Manhattan距离是绝对值之和；Jaccard系数用于集合相似性。"
+        },
+        {
+            id: 70,
+            category: "转录组分析",
+            question: "在基因表达 PCA 分析中，如果第一主成分（PC1）解释了 65% 的总方差，这意味着：",
+            options: [
+                "A. 所有样本的表达差异都由 PC1 完全决定",
+                "B. PC1 捕捉了大部分数据变异方向",
+                "C. PC1 可以直接用来判断差异表达基因",
+                "D. 剩余主成分没有任何信息"
+            ],
+            answer: 1,
+            analysis: "PCA的目的是找到数据变异最大的方向（主成分）。PC1解释65%的方差，意味着数据中最主要的、最大的变异模式被PC1所捕获。但这不代表它能代表所有信息（其他成分仍含信息），也不代表它直接对应某个具体基因。剩余的35%方差由其他主成分解释，仍可能包含重要的生物学信息。"
+        },
+        {
+            id: 71,
+            category: "转录组分析",
+            question: "在使用随机森林或 LASSO 回归构建基因表达分类模型时，特征选择的主要目的是：",
+            options: [
+                "A. 增加模型复杂度",
+                "B. 保证训练数据完全拟合",
+                "C. 降低过拟合，提高泛化能力",
+                "D. 仅保留表达量最高的基因"
+            ],
+            answer: 2,
+            analysis: "基因表达数据特征（基因数）远多于样本数，极易导致过拟合（模型在训练集上表现好，在新数据上表现差）。特征选择（如LASSO的系数收缩、随机森林的特征重要性评估）可以筛选出对分类真正有贡献的基因，减少噪声特征，简化模型，从而提高模型在独立测试集或未来新数据上的泛化能力。"
+        },
+        {
+            id: 72,
+            category: "转录组分析",
+            question: "差异表达分析中，某基因在低表达量样本中 p 值显著，这种结果应如何理解？",
+            options: [
+                "A. 可靠，可以直接作为生物学结论",
+                "B. 可能是假阳性，需要结合表达量、过滤低表达基因",
+                "C. 说明差异表达更强",
+                "D. 可以忽略 log2 Fold Change，只看 p 值"
+            ],
+            answer: 1,
+            analysis: "低表达基因由于技术噪声大，其表达值波动（方差）可能很高，这容易导致统计检验（如t检验）出现假阳性显著结果。因此，常规分析流程会进行数据过滤（过滤低表达、低信噪比基因），对此类结果应审慎对待，不能仅凭p值下结论。应同时考虑表达量水平、Fold Change大小等多个指标。"
+        },
+        {
+            id: 73,
+            category: "转录组分析",
+            question: "在绘制基因表达热图时，如果想突出表达模式而不受绝对值大小影响，应先对行（基因）做：",
+            options: [
+                "A. Z-score 标准化",
+                "B. log2 Fold Change 计算",
+                "C. PCA 降维",
+                "D. 多重假设检验"
+            ],
+            answer: 0,
+            analysis: "绘制热图时，常对每行（每个基因）进行 Z-score标准化（即减去该基因在所有样本中的均值，再除以其标准差）。这样处理后，每个基因的表达值变为均值为0，标准差为1的分布。颜色深浅代表的是相对于该基因自身平均水平的上下波动，使得不同基因间的表达模式（上调、下调趋势）可以直接比较，而不会因为某些基因绝对表达量高低而影响可视化。"
+        },
+        {
+            id: 74,
+            category: "功能富集分析",
+            question: "在 Gene Ontology (GO) 的层级结构（有向无环图，DAG）中，父注释词（Parent Term）与子注释词（Child Term）之间的关系是怎样的？",
+            options: [
+                "A. 两者之间只存在\"调控（regulates）\"关系，不存在\"部分（part of）\"关系",
+                "B. 父注释词比子注释词更特异，子注释词包括父注释词所有信息",
+                "C. 父注释词和子注释词是平级关系，没有信息包含或继承",
+                "D. 子注释词较父注释词更特异（更具体），且子注释词仅继承父注释词部分信息"
+            ],
+            answer: 3,
+            analysis: "GO是有向无环图 (DAG)，父词（更一般）和子词（更具体）存在层级关系。子词比父词更具体，并且继承（而非完全等同）父词的部分信息。这种层级结构允许从一般性功能向特定功能逐步细化，子注释词可以有多个父注释词，体现了生物学功能的复杂性和多维性。"
+        },
+        {
+            id: 75,
+            category: "功能富集分析",
+            question: "以下哪一项是 KEGG PATHWAY 数据库中定义的七个主要通路类别之一？",
+            options: [
+                "A. 物种进化（Species Evolution）",
+                "B. 人类疾病（Human Diseases）",
+                "C. 蛋白质相互作用网络（Protein-Protein Interaction Networks）",
+                "D. 表型注释（Phenotype Annotation）"
+            ],
+            answer: 1,
+            analysis: "KEGG PATHWAY数据库包含七个主要类别，其中包括\"人类疾病 (Human Diseases)\"。其他类别还包括代谢通路、遗传信息处理、环境信息处理、细胞过程、生物系统等。物种进化不是通路类别；蛋白质相互作用网络属于其他数据库；表型注释也不在KEGG通路分类中。"
+        },
+        {
+            id: 76,
+            category: "功能富集分析",
+            question: "基因集富集分析（GSEA）的主要目的是什么？",
+            options: [
+                "A. 通过识别一组基因而非单个基因的差异，从而提供更深入的生物学理解，并识别过表示的功能注释",
+                "B. 预测蛋白质的三维结构并进行同源建模",
+                "C. 计算单个基因的表达量差异（Fold Change）",
+                "D. 将所有基因产物归类为分子功能、生物过程和细胞组份"
+            ],
+            answer: 0,
+            analysis: "GSEA的核心思想是利用所有基因的排序信息，检验某个功能集的基因是否整体集中在排序列表的顶部或底部，从而提供比单个基因更深入的生物学洞察。这种方法避免了任意阈值的设定，能够发现表达变化不明显但整体上有生物学意义的基因集。蛋白质结构预测、Fold Change计算、GO分类都是其他分析任务。"
+        },
+        {
+            id: 77,
+            category: "功能富集分析",
+            question: "基因集富集分析的两种主要策略是基于分类和过表示（ORA）的方法，以及不选择差异表达基因的功能集合评分（FCS）方法。这两种策略最根本的区别是什么？",
+            options: [
+                "A. ORA 方法使用的是超几何检验，而 FCS 方法使用的是χ²检验",
+                "B. ORA 方法需要设定阈值（Cutoff）来选择差异表达基因，而 FCS 方法使用所有基因并按指标排名，无需预设阈值",
+                "C. ORA 方法更先进，FCS 方法已经被淘汰",
+                "D. ORA 方法仅能用于 KEGG 通路富集，而 FCS 方法仅能用于 GO 功能富集"
+            ],
+            answer: 1,
+            analysis: "ORA依赖预先设定的阈值来筛选差异基因列表，而FCS（如GSEA）不预先筛选基因，使用所有基因的排序信息。这是方法论上的本质不同。ORA的缺点是需要人为设定阈值，可能遗漏接近阈值的重要基因；FCS的优势是利用了全部基因信息，更加客观。统计方法的差异是表象，阈值设定才是根本区别。"
+        },
+        {
+            id: 78,
+            category: "功能富集分析",
+            question: "在基于分类和过表示的统计方法中，用于检验某一功能集是否显著富集的常用统计检验方法是哪一个？",
+            options: [
+                "A. 超几何检验（Hypergeometric Test）",
+                "B. Kolmogorov-Smirnov (K-S) 检验",
+                "C. 线性回归（Linear Regression）",
+                "D. T 检验（t-test）"
+            ],
+            answer: 0,
+            analysis: "ORA方法的核心统计方法是超几何检验（在R中使用phyper函数）。超几何检验用于计算从背景基因集中随机抽取一定数量基因时，恰好抽到k个或更多目标GO/通路相关基因的概率。K-S检验是GSEA算法的一部分；线性回归用于连续变量关系分析；T检验用于两组均值比较。"
+        },
+        {
+            id: 79,
+            category: "功能富集分析",
+            question: "使用超几何检验进行 GO 富集分析时，超几何分布中的\"总体中符合条件的数目\"通常对应于什么？",
+            options: [
+                "A. 背景基因集的总数目",
+                "B. 差异表达基因的总数目",
+                "C. 差异表达基因中注释到该 GO Term 的数目",
+                "D. 背景基因集注释到目标 GO Term 的数目"
+            ],
+            answer: 3,
+            analysis: "在超几何检验中，假设有N个背景基因，其中M个注释到某GO term，从中抽取n个差异表达基因，观察到k个注释到该GO term。这里M（总体中符合条件的数目）= 背景基因集中注释到目标GO的基因数。例如：10,000个背景基因中有200个注释到某GO，则M=200。这是超几何分布的关键参数之一。"
+        },
+        {
+            id: 80,
+            category: "功能富集分析",
+            question: "Broad's GSEA 算法中，计算的核心指标 ES（Enrichment Score）是如何得出的？",
+            options: [
+                "A. 通过计算基因表达量的 log2 FC 的均值",
+                "B. 直接等于超几何检验的 P 值",
+                "C. 通过 Fisher 精确检验计算出的 OR 值",
+                "D. 通过对基因集中的基因在预排序列表上的位置进行随机游走（Random Walk）计算，取其最大偏离值"
+            ],
+            answer: 3,
+            analysis: "GSEA算法的ES是通过随机游走计算得出的：从基因排序列表顶部开始，遇到目标基因集中的基因则向上走（加分），遇到不在集合中的基因则向下走（减分）。ES是此随机游走曲线偏离零点的最大绝对值。正值表示基因集富集在列表顶部（上调），负值表示富集在底部（下调）。log2 FC、P值、OR值都是其他分析中的指标。"
+        },
+        {
+            id: 81,
+            category: "功能富集分析",
+            question: "Molecular Signatures Database (MSigDB) 的特点之一是其物种限制。以下关于 MSigDB 的描述，哪一项是正确的？",
+            options: [
+                "A. MSigDB 包含所有已测序物种的基因签名",
+                "B. MSigDB 主要用于昆虫基因的功能注释",
+                "C. MSigDB 仅包括人的基因签名，且由专家手工筛选和验证",
+                "D. MSigDB 是一个提供药物靶点与化学反应信息的数据库"
+            ],
+            answer: 2,
+            analysis: "MSigDB（分子签名数据库）仅包括人的基因签名，且经过专家筛选和验证，是GSEA分析的标准基因集数据库。它包含多个集合：H (hallmark基因集)、C1-C8等不同类别的基因集。虽然仅限人类，但其高质量的基因集定义使其成为功能富集分析的金标准。对于其他物种，需要进行基因ID转换或使用物种特异性数据库。"
+        },
+        {
+            id: 82,
+            category: "功能富集分析",
+            question: "在基因功能富集分析的在线程序中，DAVID（Database for Annotation, Visualization and Integrated Discovery）软件的使用通常属于哪种策略？",
+            options: [
+                "A. 不选择差异表达基因，直接对所有基因排名进行分析",
+                "B. 基于网络拓扑结构的方法",
+                "C. 基于功能集评分（Functional Class Scoring）的方法",
+                "D. 基于分类和过表示（Over-representation Analysis, ORA）的方法"
+            ],
+            answer: 3,
+            analysis: "DAVID需要用户上传一个基因列表（如差异表达基因），这是ORA策略的典型特征。DAVID会将输入的基因列表与背景基因集比较，使用超几何检验或Fisher精确检验来识别过表示的GO term、KEGG通路等功能注释。与FCS方法不同，DAVID需要预先定义差异基因，属于经典的ORA方法工具。"
+        },
+        {
+            id: 83,
+            category: "功能富集分析",
+            question: "哪一种数据可视化工具主要功能是将基因表达变化映射到 KEGG 生物通路图上？",
+            options: [
+                "A. Cytoscape",
+                "B. Pathview",
+                "C. Broad's GSEA",
+                "D. IGV（Integrative Genomics Viewer）"
+            ],
+            answer: 1,
+            analysis: "Pathview是一个R包，专门用于将基因表达数据（如Fold Change、p值）映射到KEGG通路图上，生成彩色的通路图。图中的基因节点根据表达变化着色（如红色表示上调，蓝色表示下调），直观展示通路中哪些基因发生了变化。Cytoscape用于网络分析；GSEA用于富集分析；IGV用于基因组数据可视化。"
+        },
+        {
+            id: 84,
+            category: "功能富集分析",
+            question: "以下哪一项最能正确描述 FDR 与 Bonferroni 多重检验校正的主要区别？",
+            options: [
+                "A. FDR 控制假阳性比例，而 Bonferroni 控制总体显著性水平",
+                "B. Bonferroni 比 FDR 更宽松，常用于探索性分析",
+                "C. 两者完全等价，只是计算方式不同",
+                "D. FDR不能用于富集分析"
+            ],
+            answer: 0,
+            analysis: "FDR（False Discovery Rate）控制的是\"被宣称是显著的结果中，假阳性的比例\"，而Bonferroni控制的是\"至少出现一个假阳性的概率\"（FWER，family-wise error rate）。Bonferroni过于严格，在大规模检验中会损失很多真阳性；FDR更宽松且更适用于基因组学大规模筛选，是GO/KEGG富集分析的标准校正方法。"
+        },
+        {
+            id: 85,
+            category: "功能富集分析",
+            question: "在进行 GO 或 KEGG 富集分析时，背景基因集（Background Gene Set）一般如何选择？",
+            options: [
+                "A. 所有已知基因",
+                "B. 芯片或测序检测到的全部基因",
+                "C. 仅选择差异表达的上调基因",
+                "D. 仅选择参考基因组中的编码基因"
+            ],
+            answer: 1,
+            analysis: "最合理的背景是本次实验实际检测到的所有基因（芯片或测序检测到的全部基因）。这样可以避免因技术平台限制带来的偏差。例如，如果芯片只能检测2万个基因，那么用全基因组3万个基因作为背景就不合理。使用实际检测到的基因作为背景，确保统计检验的前提假设成立，使富集分析结果更加准确可靠。"
+        }
+    ];
+
+    // 状态管理
+    let currentMode = 'quiz'; // 'quiz' or 'study'
+    let currentFilter = 'all'; // 'all', 'favorite', 'error'
+    let currentIndex = 0;
+    let hasAnswered = false;
+    let filteredQuestions = [...questions]; // 当前筛选后的题目列表
+
+    // localStorage 存储的数据
+    let favoriteIds = JSON.parse(localStorage.getItem('favorites') || '[]');
+    let errorIds = JSON.parse(localStorage.getItem('errors') || '[]');
+
+    // DOM 元素
+    const dom = {
+        questionText: document.getElementById('q-text'),
+        optionsContainer: document.getElementById('options-container'),
+        analysisArea: document.getElementById('analysis-area'),
+        analysisText: document.getElementById('analysis-text'),
+        progressText: document.getElementById('progress-text'),
+        progressFill: document.getElementById('progress-fill'),
+        categoryTag: document.getElementById('q-category'),
+        modeBtns: document.querySelectorAll('.mode-btn'),
+        filterBtns: document.querySelectorAll('.filter-btn'),
+        prevBtn: document.getElementById('btn-prev'),
+        nextBtn: document.getElementById('btn-next'),
+        favoriteBtn: document.getElementById('btn-favorite'),
+        favoriteIcon: document.getElementById('favorite-icon'),
+        errorBtn: document.getElementById('btn-mark-error'),
+        errorText: document.getElementById('error-text'),
+        statTotal: document.getElementById('stat-total'),
+        statFavorite: document.getElementById('stat-favorite'),
+        statError: document.getElementById('stat-error')
+    };
+
+    // 初始化
+    function init() {
+        updateStats();
+        renderQuestion();
+    }
+
+    // 更新统计信息
+    function updateStats() {
+        dom.statTotal.innerText = questions.length;
+        dom.statFavorite.innerText = favoriteIds.length;
+        dom.statError.innerText = errorIds.length;
+    }
+
+    // 切换模式
+    function setMode(mode) {
+        currentMode = mode;
+        // 更新按钮样式
+        dom.modeBtns.forEach(btn => {
+            if(btn.textContent.includes(mode === 'quiz' ? '刷题' : '背题')) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        
+        // 重置当前题目状态并重新渲染
+        hasAnswered = false;
+        renderQuestion();
+    }
+
+    // 切换筛选模式
+    function setFilter(filter) {
+        currentFilter = filter;
+        currentIndex = 0; // 重置到第一题
+        hasAnswered = false;
+
+        // 更新按钮样式
+        dom.filterBtns.forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        // 根据筛选条件更新题目列表
+        if (filter === 'favorite') {
+            filteredQuestions = questions.filter(q => favoriteIds.includes(q.id));
+            if (filteredQuestions.length === 0) {
+                alert('收藏夹还没有题目，快去收藏吧！');
+                setFilter('all');
+                return;
+            }
+        } else if (filter === 'error') {
+            filteredQuestions = questions.filter(q => errorIds.includes(q.id));
+            if (filteredQuestions.length === 0) {
+                alert('错题本还没有题目');
+                setFilter('all');
+                return;
+            }
+        } else {
+            filteredQuestions = [...questions];
+        }
+
+        renderQuestion();
+    }
+
+    // 切换收藏状态
+    function toggleFavorite() {
+        const currentQ = filteredQuestions[currentIndex];
+        const qId = currentQ.id;
+
+        if (favoriteIds.includes(qId)) {
+            // 取消收藏
+            favoriteIds = favoriteIds.filter(id => id !== qId);
+            dom.favoriteIcon.innerText = '☆';
+            dom.favoriteBtn.classList.remove('active');
+        } else {
+            // 添加收藏
+            favoriteIds.push(qId);
+            dom.favoriteIcon.innerText = '★';
+            dom.favoriteBtn.classList.add('active');
+        }
+
+        // 保存到 localStorage
+        localStorage.setItem('favorites', JSON.stringify(favoriteIds));
+        updateStats();
+
+        // 如果在收藏模式下取消收藏，需要刷新列表
+        if (currentFilter === 'favorite' && !favoriteIds.includes(qId)) {
+            filteredQuestions = questions.filter(q => favoriteIds.includes(q.id));
+            if (filteredQuestions.length === 0) {
+                alert('收藏夹已空，返回全部题目');
+                setFilter('all');
+            } else {
+                if (currentIndex >= filteredQuestions.length) {
+                    currentIndex = filteredQuestions.length - 1;
+                }
+                renderQuestion();
+            }
+        }
+    }
+
+    // 切换错题标记
+    function toggleError() {
+        const currentQ = filteredQuestions[currentIndex];
+        const qId = currentQ.id;
+
+        if (errorIds.includes(qId)) {
+            // 取消标记
+            errorIds = errorIds.filter(id => id !== qId);
+            dom.errorText.innerText = '标记错题';
+            dom.errorBtn.classList.remove('error-active');
+        } else {
+            // 标记为错题
+            errorIds.push(qId);
+            dom.errorText.innerText = '已标记';
+            dom.errorBtn.classList.add('error-active');
+        }
+
+        // 保存到 localStorage
+        localStorage.setItem('errors', JSON.stringify(errorIds));
+        updateStats();
+
+        // 如果在错题模式下取消标记，需要刷新列表
+        if (currentFilter === 'error' && !errorIds.includes(qId)) {
+            filteredQuestions = questions.filter(q => errorIds.includes(q.id));
+            if (filteredQuestions.length === 0) {
+                alert('错题本已空，返回全部题目');
+                setFilter('all');
+            } else {
+                if (currentIndex >= filteredQuestions.length) {
+                    currentIndex = filteredQuestions.length - 1;
+                }
+                renderQuestion();
+            }
+        }
+    }
+
+    // 渲染当前题目
+    function renderQuestion() {
+        if (filteredQuestions.length === 0) {
+            dom.questionText.innerText = '暂无题目';
+            return;
+        }
+
+        const q = filteredQuestions[currentIndex];
+        
+        // 更新顶部进度
+        dom.progressText.innerText = `${currentIndex + 1} / ${filteredQuestions.length}`;
+        dom.progressFill.style.width = `${((currentIndex + 1) / filteredQuestions.length) * 100}%`;
+
+        // 填充内容
+        dom.categoryTag.innerText = q.category;
+        dom.questionText.innerText = q.question;
+        
+        // 更新收藏按钮状态
+        if (favoriteIds.includes(q.id)) {
+            dom.favoriteIcon.innerText = '★';
+            dom.favoriteBtn.classList.add('active');
+        } else {
+            dom.favoriteIcon.innerText = '☆';
+            dom.favoriteBtn.classList.remove('active');
+        }
+
+        // 更新错题标记按钮状态
+        if (errorIds.includes(q.id)) {
+            dom.errorText.innerText = '已标记';
+            dom.errorBtn.classList.add('error-active');
+        } else {
+            dom.errorText.innerText = '标记错题';
+            dom.errorBtn.classList.remove('error-active');
+        }
+        
+        // 清空旧选项
+        dom.optionsContainer.innerHTML = '';
+        dom.analysisArea.style.display = 'none';
+
+        // 渲染选项
+        q.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            
+            // 根据模式处理逻辑
+            if (currentMode === 'study') {
+                btn.classList.add('disabled');
+                if (idx === q.answer) {
+                    btn.classList.add('correct');
+                    btn.innerText = "✅ " + opt;
+                }
+            } else {
+                // 刷题模式点击事件
+                btn.onclick = () => handleAnswer(idx, btn);
+            }
+            
+            dom.optionsContainer.appendChild(btn);
+        });
+
+        // 导航按钮状态
+        dom.prevBtn.disabled = currentIndex === 0;
+        dom.nextBtn.innerText = currentIndex === filteredQuestions.length - 1 ? '完成' : '下一题';
+
+        // 背题模式直接显示解析
+        if (currentMode === 'study') {
+            showAnalysis(q.analysis);
+        }
+    }
+
+    // 处理作答
+    function handleAnswer(selectedIndex, btnElement) {
+        if (hasAnswered) return; // 防止重复点击
+        hasAnswered = true;
+
+        const q = filteredQuestions[currentIndex];
+        const buttons = dom.optionsContainer.children;
+
+        // 标记点击的选项
+        if (selectedIndex === q.answer) {
+            btnElement.classList.add('correct');
+            btnElement.innerText = "✅ " + btnElement.innerText;
+        } else {
+            btnElement.classList.add('wrong');
+            btnElement.innerText = "❌ " + btnElement.innerText;
+            // 答错自动加入错题本
+            if (!errorIds.includes(q.id)) {
+                errorIds.push(q.id);
+                localStorage.setItem('errors', JSON.stringify(errorIds));
+                dom.errorText.innerText = '已标记';
+                dom.errorBtn.classList.add('error-active');
+                updateStats();
+            }
+            // 同时也把对的标出来
+            buttons[q.answer].classList.add('correct');
+            buttons[q.answer].innerText = "✅ " + buttons[q.answer].innerText;
+        }
+
+        // 禁用所有按钮
+        Array.from(buttons).forEach(btn => btn.classList.add('disabled'));
+
+        // 显示解析
+        showAnalysis(q.analysis);
+    }
+
+    // 显示解析
+    function showAnalysis(text) {
+        dom.analysisText.innerText = text;
+        dom.analysisArea.style.display = 'block';
+    }
+
+    // 翻页
+    function prevQuestion() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            hasAnswered = false; // 翻页重置状态
+            renderQuestion();
+        }
+    }
+
+    function nextQuestion() {
+        if (currentIndex < filteredQuestions.length - 1) {
+            currentIndex++;
+            hasAnswered = false; // 翻页重置状态
+            renderQuestion();
+        } else {
+            alert("恭喜你！已完成所有题目。");
+        }
+    }
+
+    // 启动
+    init();
+
+</script>
+
+</body>
+</html>

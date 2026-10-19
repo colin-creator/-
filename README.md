@@ -4,19 +4,23 @@
 
 ## 在线访问
 
-本项目已启用 GitHub Pages，可以直接在线访问刷题：
+GitHub Pages 地址：https://colin-creator.github.io/-/
 
-🔗 **访问地址**: https://colin-creator.github.io/-/
+> 仓库名为 `-`（一个横杠）。首次发布需在 Settings → Pages → Build and deployment 中将 Source 设为 GitHub Actions，并确认部署工作流成功。
 
-> 注：仓库名称就是 `-`（一个横杠），所以 URL 就是这样的。
+原 Netlify 地址：https://pumcbioinfoquiz.netlify.app/
 
 ## 本地使用
 
-也可以直接下载 `index.html` 文件到本地，用浏览器打开即可使用。
+下载 `index.html`，用浏览器打开即可使用。
 
 ## 功能特点
 
-- 📱 移动端友好的界面设计
-- 🔄 支持刷题模式和背题模式两种学习方式
-- ✅ 即时答案反馈和详细解析
-- 📊 学习进度跟踪
+- 移动端界面
+- 刷题与背题模式
+- 即时答案反馈和解析
+- 收藏夹、错题本与题目进度显示
+
+## 部署
+
+推送到 `main` 或在 Actions 中手动运行 `Deploy to GitHub Pages`。工作流使用 `contents: read`、`pages: write` 和 `id-token: write`，部署至 `github-pages` 环境。
